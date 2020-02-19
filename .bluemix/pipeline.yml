@@ -1,0 +1,44 @@
+---
+defaultBaseImageVersion: latest
+stages:
+- name: BUILD
+  inputs:
+  - type: git
+    branch: master
+    service: ${GIT_REPO}
+  triggers:
+  - type: commit
+  properties:
+  - name: LOGICAL_APP_NAME
+    value: ${APP_NAME}
+    type: text
+  - name: BUILD_PREFIX
+    value: master
+    type: text
+  jobs:
+  - name: Maven build & test
+    type: builder
+    SERVICE_INSTANCE: (default)
+	SERVICE_INSTANCE_TYPE: artifactory
+    extension_id: ibm.devops.services.pipeline.maven.build.deploy
+    enable_tests: true
+    script: |+
+		#!/bin/bash
+		# environment variables are available:
+		# MAVEN_NAME: name of the service instance
+		# MAVEN_USER_ID: userid for the maven repository
+		# MAVEN_TOKEN: the token or password for the maven repository
+		# MAVEN_SNAPSHOT_URL: the maven snapshot repository
+		# MAVEN_RELEASE_URL: the maven release repository
+		# MAVEN_MIRROR_URL: the maven mirror repository
+		# SONAR_INSTANCE_NAME: the name of the SonarQube instance
+		# SONAR_SERVER_URL: the url of the SonarQube server
+		# SONAR_USER_ID: SonarQube user name
+		# SONAR_USER_TOKEN: SonarQube password or authentication token
+		# The settings.xml is available in $HOME/.m2/settings.xml
+		# The name of the snapshots repository is 'snapshots'
+		# The name of the release repository is 'releases'
+		# The name of the mirror repository is 'central'
+
+		mvn -B clean package 
+		mvn -DaltDeploymentRepository=snapshots::default::${MAVEN_SNAPSHOT_URL} deploy
